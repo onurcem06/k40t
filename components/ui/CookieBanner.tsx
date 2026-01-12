@@ -6,7 +6,7 @@ const CookieBanner: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem('agencyos_cookie_consent');
+    const consent = localStorage.getItem('agencyos_cookie_consent_v2');
     if (!consent) {
       const timer = setTimeout(() => setIsVisible(true), 2000);
       return () => clearTimeout(timer);
@@ -14,7 +14,7 @@ const CookieBanner: React.FC = () => {
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem('agencyos_cookie_consent', 'true');
+    localStorage.setItem('agencyos_cookie_consent_v2', 'true');
     setIsVisible(false);
   };
 
@@ -34,15 +34,15 @@ const CookieBanner: React.FC = () => {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3 shrink-0 w-full md:w-auto">
-          <button 
+          <button
             onClick={handleAccept}
             className="flex-1 md:flex-none bg-white text-black hover:bg-orange-500 hover:text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
           >
             <Check size={14} strokeWidth={4} /> KABUL ET
           </button>
-          <button 
+          <button
             onClick={() => setIsVisible(false)}
             className="p-3 text-slate-500 hover:text-white transition-colors"
           >
