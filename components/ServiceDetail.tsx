@@ -25,9 +25,9 @@ const ServiceDetail: React.FC<ServiceDetailProps> = ({ view, siteContent, onBack
   return (
     <div className="min-h-screen bg-transparent pt-40 pb-20 px-6 animate-in fade-in zoom-in-95 duration-700">
       <div className="container mx-auto max-w-6xl relative z-20">
-        <button 
+        <button
           type="button"
-          onClick={onBack} 
+          onClick={onBack}
           className="flex items-center gap-3 text-slate-500 hover:text-orange-500 transition-all font-black text-xs uppercase tracking-[0.3em] mb-12 group relative z-30"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -54,7 +54,7 @@ const ServiceDetail: React.FC<ServiceDetailProps> = ({ view, siteContent, onBack
 
           <div className="space-y-8">
             <div className="grid grid-cols-1 gap-6">
-              {(service.detailedImages.length > 0 ? service.detailedImages : [service.image]).map((img, idx) => (
+              {((service.detailedImages || []).length > 0 ? (service.detailedImages || []) : [service.image]).map((img, idx) => (
                 <div key={idx} className="relative aspect-video rounded-[2.5rem] overflow-hidden group glass-panel border border-white/10 p-2">
                   <div className="w-full h-full rounded-[2rem] overflow-hidden">
                     <img src={img} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-80 group-hover:opacity-100" />
