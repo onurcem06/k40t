@@ -12,6 +12,10 @@ interface BlogViewProps {
   initialPostId?: string;
 }
 
+import SeoHead from '../components/ui/SeoHead.tsx';
+
+// ... interface ...
+
 const BlogView: React.FC<BlogViewProps> = ({ posts, content, onNavigate, initialPostId }) => {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
@@ -24,23 +28,29 @@ const BlogView: React.FC<BlogViewProps> = ({ posts, content, onNavigate, initial
 
   return (
     <MarketingLayout content={content} onNavigate={onNavigate} onLoginClick={() => onNavigate('LOGIN')}>
+      <SeoHead
+        title={selectedPost ? (selectedPost.seoTitle || selectedPost.title) : content.blogPage.topTitle}
+        description={selectedPost ? (selectedPost.seoDescription || selectedPost.excerpt) : content.blogPage.description}
+        image={selectedPost?.image}
+        type={selectedPost ? 'article' : 'website'}
+      />
       {selectedPost ? (
-        <BlogPostReader 
-          post={selectedPost} 
+        <BlogPostReader
+          post={selectedPost}
           onBack={() => {
             setSelectedPost(null);
             onNavigate('BLOG');
-          }} 
+          }}
         />
       ) : (
-        <BlogList 
-          posts={posts} 
-          content={content} 
-          onBack={() => onNavigate('MARKETING')} 
+        <BlogList
+          posts={posts}
+          content={content}
+          onBack={() => onNavigate('MARKETING')}
           onReadPost={(post) => {
             setSelectedPost(post);
             onNavigate(post.id);
-          }} 
+          }}
         />
       )}
     </MarketingLayout>

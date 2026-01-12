@@ -16,11 +16,17 @@ const IconMap: { [key: string]: any } = {
   Share2, Clapperboard, Target, Palette, Sparkles, Monitor, Shield, TrendingUp, Globe
 };
 
+import SeoHead from '../components/ui/SeoHead.tsx';
+
 const HomeView: React.FC<HomeViewProps> = ({ content, onNavigate, onAddMessage }) => {
   const isNavVisible = (view: string) => content.navigation.find(n => n.view === view)?.isEnabled;
 
   return (
     <MarketingLayout content={content} onNavigate={onNavigate} onLoginClick={() => onNavigate('LOGIN')}>
+      <SeoHead
+        title={content.seo.siteTitle}
+        description={content.seo.siteDescription}
+      />
       {/* HERO SECTION - SEO Optimized H1 */}
       <section className="container mx-auto px-4 md:px-6 py-20 md:py-32 lg:py-48 text-center relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-orange-600/5 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></div>
