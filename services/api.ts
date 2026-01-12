@@ -32,7 +32,23 @@ export const ApiService = {
 
   saveSiteContent: async (content: SiteContent): Promise<boolean> => {
     try {
-      await set(ref(db, 'siteContent'), content);
+      // "Write too large" hatasını önlemek için Parçalı Kayıt (Chunked Save) yapıyoruz
+      const sections = [
+        'seo', 'branding', 'hero', 'corporate', 'legal',
+        'blogPage', 'contact', 'portals', 'navigation', 'login'
+      ];
+
+      // 1. Küçük parçaları paralel kaydet
+      const promises = sections.map(key =>
+        set(ref(db, `siteContent/${key}`), (content as any)[key])
+      );
+      await Promise.all(promises);
+
+      // 2. Büyük parçaları (Görsel içerenleri) sırayla kaydet
+      await set(ref(db, 'siteContent/services'), content.services);
+      await set(ref(db, 'siteContent/references'), content.references);
+      await set(ref(db, 'siteContent/blogPosts'), content.blogPosts);
+
       return true;
     } catch (error) {
       console.error("Firebase saveSiteContent Error:", error);
