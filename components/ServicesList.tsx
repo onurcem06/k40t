@@ -31,17 +31,17 @@ const ServicesList: React.FC<ServicesListProps> = ({ siteContent, onBack, onServ
           <p className="text-slate-500 mt-6 md:mt-8 max-w-xl text-base md:text-lg font-medium leading-relaxed">Fikir aşamasından prodüksiyona, performans takibinden topluluk yönetimine kadar tüm süreci uçtan uca yönetiyoruz.</p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
           {siteContent.services.map((s) => {
             const Icon = (IconMap as any)[s.iconType] || Target;
             return (
               <div
                 key={s.id}
                 onClick={() => onServiceClick(s.id)}
-                className="glass-panel rounded-[2.5rem] md:rounded-[3rem] border border-white/5 hover:border-orange-500/20 transition-all group cursor-pointer overflow-hidden flex flex-col"
+                className="glass-panel rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 hover:border-orange-500/30 transition-all group cursor-pointer bg-slate-900/10 flex flex-col overflow-hidden h-full min-h-[350px]"
               >
-                {/* Image Section - Same as HomeView */}
-                <div className="h-48 md:h-64 relative overflow-hidden bg-black/40">
+                {/* Slimmer Visual Area - Match HomeView */}
+                <div className="h-32 md:h-44 relative overflow-hidden bg-black/40">
                   {s.image ? (
                     <img src={s.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100" alt={s.title} />
                   ) : (
@@ -49,25 +49,24 @@ const ServicesList: React.FC<ServicesListProps> = ({ siteContent, onBack, onServ
                       <Icon size={40} className="opacity-20" />
                     </div>
                   )}
-                  <div className="absolute top-5 left-5 w-12 h-12 md:w-14 md:h-14 bg-black/60 backdrop-blur-xl rounded-xl md:rounded-2xl flex items-center justify-center text-orange-500 border border-white/10 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-lg z-10">
-                    <Icon size={20} className="md:w-6 md:h-6" />
+                  <div className="absolute top-3 left-3 w-10 h-10 md:w-12 md:h-12 bg-black/60 backdrop-blur-xl rounded-lg md:rounded-xl flex items-center justify-center text-orange-500 border border-white/10 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-lg">
+                    <Icon size={18} className="md:w-6 md:h-6" />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
                 </div>
 
-                {/* Content Section */}
-                <div className="p-8 md:p-10 flex-1 flex flex-col">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight group-hover:text-orange-500 transition-colors">{s.title}</h3>
-                    <ArrowRight size={20} className="text-slate-700 group-hover:text-orange-500 transition-all group-hover:translate-x-1" />
-                  </div>
+                {/* Compact Content Area */}
+                <div className="p-5 md:p-8 flex-1 flex flex-col">
+                  <h3 className="text-sm md:text-xl font-black text-white uppercase tracking-tight mb-2 group-hover:text-orange-500 transition-colors leading-tight">
+                    {s.title}
+                  </h3>
+                  <p className="text-slate-500 text-[10px] md:text-sm font-bold leading-relaxed mb-6 line-clamp-3">
+                    {s.desc}
+                  </p>
 
-                  <p className="text-slate-500 font-bold text-xs md:text-sm leading-relaxed mb-8 line-clamp-3">{s.desc}</p>
-
-                  <div className="flex flex-wrap gap-2 mt-auto">
-                    {s.features.slice(0, 3).map((f, i) => (
-                      <span key={i} className="text-[8px] font-black text-slate-500 bg-white/5 px-3 py-1.5 rounded-lg uppercase tracking-widest">{f}</span>
-                    ))}
+                  <div className="mt-auto flex items-center justify-between">
+                    <div className="h-px flex-1 bg-white/5 group-hover:bg-orange-500/30 transition-colors"></div>
+                    <ArrowRight size={14} className="text-slate-800 group-hover:text-orange-500 transition-all ml-3" />
                   </div>
                 </div>
               </div>
