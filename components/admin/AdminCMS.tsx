@@ -567,6 +567,20 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
               </h5>
               <InputField label="METİN İÇERİĞİ" type="textarea" value={content.legal.kvkk} onChange={(v: string) => updateNested('legal.kvkk', v)} />
             </div>
+
+            <div className="space-y-6 pt-10 border-t border-white/5">
+              <h5 className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-b border-white/5 pb-2 flex items-center gap-3">
+                <Shield size={16} /> GİZLİLİK POLİTİKASI
+              </h5>
+              <InputField label="METİN İÇERİĞİ" type="textarea" value={content.legal.privacy} onChange={(v: string) => updateNested('legal.privacy', v)} />
+            </div>
+
+            <div className="space-y-6 pt-10 border-t border-white/5">
+              <h5 className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-b border-white/5 pb-2 flex items-center gap-3">
+                <Gavel size={16} /> KULLANIM KOŞULLARI
+              </h5>
+              <InputField label="METİN İÇERİĞİ" type="textarea" value={content.legal.terms} onChange={(v: string) => updateNested('legal.terms', v)} />
+            </div>
           </div>
         )}
       </div>
