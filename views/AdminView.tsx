@@ -15,7 +15,8 @@ interface AdminViewProps {
   users: UserAccount[];
   messages: ContactMessage[];
   onLogout: () => void;
-  onUpdateContent: (c: SiteContent) => Promise<void>;
+  onUpdateContent: (c: SiteContent) => void;
+  onSaveContent: (c: SiteContent) => Promise<void>;
   onUpdateClients: (c: ClientProfile[]) => Promise<void>;
   onUpdateUsers: (u: UserAccount[]) => void;
   onUpdateMessages: (m: ContactMessage[]) => void;
@@ -39,7 +40,7 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
     try {
       // Hem içeriği hem müşteri listesini (Meta verileri dahil) sunucuya it
       await Promise.all([
-        props.onUpdateContent(props.content),
+        props.onSaveContent(props.content),
         props.onUpdateClients(props.clients)
       ]);
       alert("Tüm değişiklikler başarıyla sunucuya kaydedildi ve yayına alındı.");
@@ -55,7 +56,7 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
       <aside className="w-80 border-r border-white/5 bg-[#080B14] flex flex-col h-full shrink-0 relative z-20">
         <div className="p-10 border-b border-white/5 flex flex-col items-center gap-4">
           <div className="bg-white p-3 rounded-2xl shadow-xl">
-             <img src={props.content.branding.logoUrl} className="h-10 w-auto object-contain" alt="Logo" />
+            <img src={props.content.branding.logoUrl} className="h-10 w-auto object-contain" alt="Logo" />
           </div>
           <span className="text-[10px] font-black tracking-[0.4em] uppercase text-orange-500">ADMIN CONTROL</span>
         </div>
@@ -65,9 +66,8 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                activeTab === item.id ? 'bg-orange-600 text-white shadow-xl shadow-orange-950/20' : 'text-slate-500 hover:text-white hover:bg-white/5'
-              }`}
+              className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === item.id ? 'bg-orange-600 text-white shadow-xl shadow-orange-950/20' : 'text-slate-500 hover:text-white hover:bg-white/5'
+                }`}
             >
               <item.icon size={16} /> {item.label}
             </button>
@@ -75,12 +75,12 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
         </nav>
 
         <div className="p-6 border-t border-white/5 space-y-4">
-          <button 
-            onClick={handleGlobalSave} 
+          <button
+            onClick={handleGlobalSave}
             disabled={isSaving}
             className="w-full bg-orange-600 hover:bg-orange-500 text-white py-4 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg disabled:opacity-50"
           >
-            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             CANLIYA AL
           </button>
           <button onClick={props.onLogout} className="w-full bg-rose-500/10 text-rose-500 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-500 hover:text-white transition-all">
@@ -94,12 +94,12 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
           {activeTab === 'OVERVIEW' && <AdminOverview clients={props.clients} />}
           {activeTab === 'CLIENTS' && <AdminClientManager clients={props.clients} onUpdateClients={props.onUpdateClients} />}
           {activeTab === 'CMS' && (
-            <AdminCMS 
-              content={props.content} 
+            <AdminCMS
+              content={props.content}
               clients={props.clients}
               users={props.users}
               messages={props.messages}
-              onUpdateContent={props.onUpdateContent} 
+              onUpdateContent={props.onUpdateContent}
               onUpdateClients={props.onUpdateClients}
               onUpdateUsers={props.onUpdateUsers}
               onUpdateMessages={props.onUpdateMessages}

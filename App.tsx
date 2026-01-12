@@ -32,14 +32,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const initData = async () => {
       const startTime = Date.now();
-      
+
       try {
         const [remoteContent, remoteClients, remoteMessages] = await Promise.all([
           ApiService.getSiteContent(),
           ApiService.getClients(),
           ApiService.getMessages()
         ]);
-        
+
         if (remoteContent) setSiteContent(remoteContent);
         if (remoteClients) setClients(remoteClients);
         if (remoteMessages) setMessages(remoteMessages);
@@ -62,8 +62,11 @@ const App: React.FC = () => {
     document.title = siteContent.seo.siteTitle || 'Kafamda Kırk Tilki';
   }, [siteContent.branding.logoUrl, siteContent.seo.siteTitle]);
 
-  const handleUpdateContent = async (content: SiteContent) => {
+  const handleUpdateContent = (content: SiteContent) => {
     setSiteContent(content);
+  };
+
+  const handleSaveContent = async (content: SiteContent) => {
     await ApiService.saveSiteContent(content);
   };
 
@@ -83,10 +86,10 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#020617] flex items-center justify-center overflow-hidden">
         <div className="flex flex-col items-center gap-10 animate-in fade-in zoom-in-95 duration-1000">
           <div className="relative">
-             <div className="w-24 h-24 border-2 border-orange-500/20 rounded-full animate-[spin_3s_linear_infinite]"></div>
-             <div className="absolute inset-0 flex items-center justify-center text-orange-500">
-                <FoxIcons type="FoxHead" size={40} className="animate-pulse" />
-             </div>
+            <div className="w-24 h-24 border-2 border-orange-500/20 rounded-full animate-[spin_3s_linear_infinite]"></div>
+            <div className="absolute inset-0 flex items-center justify-center text-orange-500">
+              <FoxIcons type="FoxHead" size={40} className="animate-pulse" />
+            </div>
           </div>
           <div className="flex flex-col items-center gap-2">
             <h2 className="text-white font-black text-[10px] uppercase tracking-[0.8em] animate-pulse">AGENCY OS</h2>
@@ -101,23 +104,24 @@ const App: React.FC = () => {
   const renderView = () => {
     if (currentUser) {
       if (currentUser.role === UserRole.ADMIN && view.startsWith('ADMIN')) {
-        return <AdminView 
-          content={siteContent} 
-          clients={clients} 
-          users={users} 
-          messages={messages} 
-          onLogout={() => {setCurrentUser(null); setView('MARKETING')}} 
-          onUpdateContent={handleUpdateContent} 
-          onUpdateClients={handleUpdateClients} 
-          onUpdateUsers={setUsers} 
-          onUpdateMessages={setMessages} 
+        return <AdminView
+          content={siteContent}
+          clients={clients}
+          users={users}
+          messages={messages}
+          onLogout={() => { setCurrentUser(null); setView('MARKETING') }}
+          onUpdateContent={handleUpdateContent}
+          onSaveContent={handleSaveContent}
+          onUpdateClients={handleUpdateClients}
+          onUpdateUsers={setUsers}
+          onUpdateMessages={setMessages}
         />;
       }
       if (currentUser.role === UserRole.CLIENT) {
-        return <ClientView content={siteContent} clients={clients} user={currentUser} onLogout={() => {setCurrentUser(null); setView('MARKETING')}} />;
+        return <ClientView content={siteContent} clients={clients} user={currentUser} onLogout={() => { setCurrentUser(null); setView('MARKETING') }} />;
       }
       if (currentUser.role === UserRole.EMPLOYEE) {
-        return <EmployeeView content={siteContent} tasks={[]} onLogout={() => {setCurrentUser(null); setView('MARKETING')}} />;
+        return <EmployeeView content={siteContent} tasks={[]} onLogout={() => { setCurrentUser(null); setView('MARKETING') }} />;
       }
     }
 
@@ -132,19 +136,19 @@ const App: React.FC = () => {
     if (view === 'REFERENCES') return <ReferencesView content={siteContent} onNavigate={setView} />;
     if (['MANIFESTO', 'ABOUT'].includes(view)) return <AboutView type={view.toLowerCase() as any} content={siteContent} onNavigate={setView} />;
     if (view === 'CONTACT_PAGE') return <ContactView content={siteContent} onNavigate={setView} onAddMessage={handleAddMessage} />;
-    if (view === 'LOGIN') return <LoginView content={siteContent} users={users} onLoginAttempt={(u,p) => {
+    if (view === 'LOGIN') return <LoginView content={siteContent} users={users} onLoginAttempt={(u, p) => {
       const user = users.find(x => x.username === u && x.password === p);
-      if (user) { 
+      if (user) {
         setCurrentUser(user);
         if (user.role === UserRole.ADMIN) setView('ADMIN_DASHBOARD');
         else if (user.role === UserRole.CLIENT) setView('CLIENT_PORTAL');
         else setView('EMPLOYEE_PORTAL');
-        return true; 
+        return true;
       }
       return false;
     }} onNavigate={setView} />;
     if (['PRIVACY_POLICY', 'KVKK_TEXT', 'TERMS_OF_USE'].includes(view)) return <LegalView type={view as any} content={siteContent} onNavigate={setView} />;
-    
+
     return <HomeView content={siteContent} onNavigate={setView} onAddMessage={handleAddMessage} />;
   };
 
