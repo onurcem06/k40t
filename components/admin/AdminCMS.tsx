@@ -9,8 +9,7 @@ import {
   Database, Download, HardDriveDownload, AlertTriangle
 } from 'lucide-react';
 import { SiteContent, ServiceItem, ReferenceItem, NavItem, ClientProfile, UserAccount, ContactMessage } from '../../types.ts';
-import { storage } from '../../firebase.ts';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { compressImage } from '../../utils/imageCompression.ts';
 
 const RICH_ICONS = [
   { id: 'Megaphone', icon: Megaphone }, { id: 'Zap', icon: Zap }, { id: 'Cpu', icon: Cpu },
@@ -64,14 +63,12 @@ const Dropzone = memo(({ currentImage, label, onUpload, aspect = "aspect-video",
     if (file) {
       try {
         setIsUploading(true);
-        const fileName = `uploads/${Date.now()}_${file.name}`;
-        const fileRef = storageRef(storage, fileName);
-        await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(fileRef);
-        onUpload(url);
+        // CORS/Storage hatasını aşmak için: İstemci tarafında sıkıştırıp Base64 olarak kaydet
+        const compressedBase64 = await compressImage(file, 800, 0.7);
+        onUpload(compressedBase64);
       } catch (error) {
-        console.error("Upload failed", error);
-        alert("Görsel yüklenirken hata oluştu.");
+        console.error("Compression failed", error);
+        alert("Görsel işlenirken hata oluştu.");
       } finally {
         setIsUploading(false);
       }
@@ -143,19 +140,15 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const fileName = `uploads/works/${Date.now()}_${file.name}`;
-        const fileRef = storageRef(storage, fileName);
-        await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(fileRef);
-
+        const compressedBase64 = await compressImage(file, 800, 0.7);
         const currentItems = content.references.items;
         const updatedItems = currentItems.map(r =>
-          r.id === refId ? { ...r, workImages: [...(r.workImages || []), url] } : r
+          r.id === refId ? { ...r, workImages: [...(r.workImages || []), compressedBase64] } : r
         );
         updateNested('references.items', updatedItems);
       } catch (error) {
-        console.error("Work image upload failed", error);
-        alert("Görsel yüklenemedi.");
+        console.error("Image processing failed", error);
+        alert("Görsel işlenemedi.");
       }
     }
   }, [content.references.items, updateNested]);
