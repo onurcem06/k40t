@@ -1,15 +1,9 @@
-console.log("Supabase URL yüklendi mi?:", !!import.meta.env.VITE_SUPABASE_URL);
-console.log("Supabase Key yüklendi mi?:", !!import.meta.env.VITE_SUPABASE_ANON_KEY);
 import { createClient } from '@supabase/supabase-js'
 
-// TypeScript'e 'env' özelliğinin var olduğunu bu şekilde anlatıyoruz
-const env = (import.meta as any).env;
+// TEST İÇİN: Doğrudan senin değerlerini buraya yazıyoruz
+const supabaseUrl = 'https://uhumcehwtkbsotyacluw.supabase.co'
+const supabaseAnonKey = 'sb_publishable_Dcup08i-tg1MmTY7T2g0PA_6AsQaf2a'
 
-const supabaseUrl = env.VITE_SUPABASE_URL;
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("KRİTİK HATA: Supabase anahtarları .env.local dosyasından okunamadı!");
-}
+console.log("Bağlantı kuruluyor...");
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
