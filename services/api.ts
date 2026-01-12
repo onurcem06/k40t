@@ -2,11 +2,11 @@
 import { SiteContent, ClientProfile, UserAccount, ContactMessage } from '../types.ts';
 import { INITIAL_CONTENT } from '../data/defaultContent.ts';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+import { db } from '../firebase';
+import { ref, get, set, child, push } from 'firebase/database';
 
-const headers = {
-  'Content-Type': 'application/json'
-};
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''; // No longer needed
+
 
 /**
  * ApiService: Sunucuya bağlanmaya çalışır, bulamazsa yerel veriyi döner.
@@ -14,98 +14,87 @@ const headers = {
  */
 export const ApiService = {
   getSiteContent: async (): Promise<SiteContent> => {
-    if (!API_BASE_URL) return INITIAL_CONTENT;
-    
     try {
-      const response = await fetch(`${API_BASE_URL}/content`, { 
-        method: 'GET', 
-        headers,
-        signal: AbortSignal.timeout(3000) // 3 saniye içinde yanıt gelmezse vazgeç
-      });
-      if (!response.ok) return INITIAL_CONTENT;
-      return await response.json();
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, 'siteContent'));
+      if (snapshot.exists()) {
+        return snapshot.val();
+      } else {
+        // Veritabanında yoksa varsayılanı yükle ve veritabanına kaydet
+        await set(ref(db, 'siteContent'), INITIAL_CONTENT);
+        return INITIAL_CONTENT;
+      }
     } catch (error) {
-      // Sadece üretim ortamında veya özel durumda logla, demo sırasında sessiz kal
-      const local = localStorage.getItem('agencyos_content');
-      return local ? JSON.parse(local) : INITIAL_CONTENT;
+      console.error("Firebase getSiteContent Error:", error);
+      return INITIAL_CONTENT;
     }
   },
 
   saveSiteContent: async (content: SiteContent): Promise<boolean> => {
-    localStorage.setItem('agencyos_content', JSON.stringify(content));
-    if (!API_BASE_URL) return true;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/content`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(content),
-      });
-      return response.ok;
+      await set(ref(db, 'siteContent'), content);
+      return true;
     } catch (error) {
-      return true; 
+      console.error("Firebase saveSiteContent Error:", error);
+      return false;
     }
   },
 
   getClients: async (): Promise<ClientProfile[]> => {
-    if (!API_BASE_URL) {
-      const local = localStorage.getItem('agencyos_clients');
-      return local ? JSON.parse(local) : [];
-    }
-
     try {
-      const response = await fetch(`${API_BASE_URL}/clients`, { method: 'GET', headers });
-      if (!response.ok) return [];
-      return await response.json();
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, 'clients'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Firebase array'leri objeye çevirebilir, bu yüzden kontrol et
+        return Array.isArray(data) ? data : Object.values(data);
+      }
+      return [];
     } catch (error) {
-      const local = localStorage.getItem('agencyos_clients');
-      return local ? JSON.parse(local) : [];
+      console.error("Firebase getClients Error:", error);
+      return [];
     }
   },
 
   saveClients: async (clients: ClientProfile[]): Promise<boolean> => {
-    localStorage.setItem('agencyos_clients', JSON.stringify(clients));
-    if (!API_BASE_URL) return true;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/clients`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(clients),
-      });
-      return response.ok;
-    } catch (error) {
+      await set(ref(db, 'clients'), clients);
       return true;
+    } catch (error) {
+      console.error("Firebase saveClients Error:", error);
+      return false;
     }
   },
 
   sendMessage: async (message: ContactMessage): Promise<boolean> => {
-    if (!API_BASE_URL) {
-      const current = JSON.parse(localStorage.getItem('agencyos_messages') || '[]');
-      localStorage.setItem('agencyos_messages', JSON.stringify([message, ...current]));
-      return true;
-    }
-
     try {
-      const response = await fetch(`${API_BASE_URL}/messages`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(message),
-      });
-      return response.ok;
-    } catch (error) {
+      // Mesajları benzersiz ID'lerle listeye ekle
+      const messagesRef = ref(db, 'messages');
+      const newMessageRef = push(messagesRef);
+      await set(newMessageRef, message);
       return true;
+    } catch (error) {
+      console.error("Firebase sendMessage Error:", error);
+      return false;
     }
   },
 
   getMessages: async (): Promise<ContactMessage[]> => {
-    if (!API_BASE_URL) return JSON.parse(localStorage.getItem('agencyos_messages') || '[]');
-    
     try {
-      const response = await fetch(`${API_BASE_URL}/messages`, { method: 'GET', headers });
-      return await response.json();
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, 'messages'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Object to array conversion for list display
+        return Object.keys(data).map(key => ({
+          ...data[key],
+          // Eğer id yoksa key'i id olarak kullanabiliriz, ama types.ts'deki yapıya bağlı
+        })).reverse(); // En yeniden eskiye
+      }
+      return [];
     } catch (error) {
-      return JSON.parse(localStorage.getItem('agencyos_messages') || '[]');
+      console.error("Firebase getMessages Error:", error);
+      return [];
     }
   }
 };
