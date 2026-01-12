@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, memo, useCallback } from 'react';
-import { 
-  Plus, Trash2, Image as ImageIcon, Layout, FileText, Phone, Sparkles, 
+import {
+  Plus, Trash2, Image as ImageIcon, Layout, FileText, Phone, Sparkles,
   X, Save, UploadCloud, ChevronRight, Star, Shield, Gavel, Search,
   Target, Globe, Palette, Share2, Clapperboard, Monitor, TrendingUp, Eye, EyeOff,
   Navigation, MousePointer2, Info, Megaphone, Zap, Cpu, Layers, Video, Smartphone,
@@ -9,6 +9,8 @@ import {
   Database, Download, HardDriveDownload, AlertTriangle
 } from 'lucide-react';
 import { SiteContent, ServiceItem, ReferenceItem, NavItem, ClientProfile, UserAccount, ContactMessage } from '../../types.ts';
+import { storage } from '../../firebase.ts';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const RICH_ICONS = [
   { id: 'Megaphone', icon: Megaphone }, { id: 'Zap', icon: Zap }, { id: 'Cpu', icon: Cpu },
@@ -35,16 +37,16 @@ const InputField = memo(({ label, value, onChange, placeholder = "", type = "tex
   <div className="space-y-2">
     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">{label}</label>
     {type === "textarea" ? (
-      <textarea 
-        value={value || ""} 
+      <textarea
+        value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-slate-300 text-sm h-48 md:h-64 resize-none focus:border-orange-500/50 outline-none transition-all custom-scrollbar"
       />
     ) : (
-      <input 
+      <input
         type={type}
-        value={value || ""} 
+        value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-white font-black text-xs focus:border-orange-500/50 outline-none transition-all"
@@ -55,12 +57,24 @@ const InputField = memo(({ label, value, onChange, placeholder = "", type = "tex
 
 const Dropzone = memo(({ currentImage, label, onUpload, aspect = "aspect-video", hint = "" }: any) => {
   const fileRef = useRef<HTMLInputElement>(null);
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => onUpload(reader.result as string);
-      reader.readAsDataURL(file);
+      try {
+        setIsUploading(true);
+        const fileName = `uploads/${Date.now()}_${file.name}`;
+        const fileRef = storageRef(storage, fileName);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        onUpload(url);
+      } catch (error) {
+        console.error("Upload failed", error);
+        alert("Görsel yüklenirken hata oluştu.");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -70,12 +84,17 @@ const Dropzone = memo(({ currentImage, label, onUpload, aspect = "aspect-video",
         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</label>
         {hint && <span className="text-[8px] font-bold text-orange-500/70 uppercase">{hint}</span>}
       </div>
-      <div 
-        onClick={() => fileRef.current?.click()}
+      <div
+        onClick={() => !isUploading && fileRef.current?.click()}
         className={`${aspect} rounded-2xl border-2 border-dashed border-white/10 bg-black/40 hover:border-orange-500/50 transition-all cursor-pointer flex flex-col items-center justify-center overflow-hidden group relative`}
       >
-        <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleFile} />
-        {currentImage ? (
+        <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleFile} disabled={isUploading} />
+        {isUploading ? (
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest">YÜKLENİYOR...</span>
+          </div>
+        ) : currentImage ? (
           <img src={currentImage} className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" alt="Preview" />
         ) : (
           <div className="flex flex-col items-center gap-2">
@@ -99,9 +118,9 @@ interface AdminCMSProps {
   onUpdateMessages: (m: ContactMessage[]) => void;
 }
 
-const AdminCMS: React.FC<AdminCMSProps> = ({ 
-  content, clients, users, messages, 
-  onUpdateContent, onUpdateClients, onUpdateUsers, onUpdateMessages 
+const AdminCMS: React.FC<AdminCMSProps> = ({
+  content, clients, users, messages,
+  onUpdateContent, onUpdateClients, onUpdateUsers, onUpdateMessages
 }) => {
   const [activeTab, setActiveTab] = useState<'HOME' | 'NAV' | 'PAGES' | 'BRANDING' | 'SYSTEM'>('HOME');
   const [subTab, setSubTab] = useState<string>('HERO');
@@ -120,19 +139,24 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
     onUpdateContent(newContent);
   }, [content, onUpdateContent]);
 
-  const handleWorkImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>, refId: string) => {
+  const handleWorkImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, refId: string) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const b64 = reader.result as string;
+      try {
+        const fileName = `uploads/works/${Date.now()}_${file.name}`;
+        const fileRef = storageRef(storage, fileName);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+
         const currentItems = content.references.items;
-        const updatedItems = currentItems.map(r => 
-          r.id === refId ? { ...r, workImages: [...(r.workImages || []), b64] } : r
+        const updatedItems = currentItems.map(r =>
+          r.id === refId ? { ...r, workImages: [...(r.workImages || []), url] } : r
         );
         updateNested('references.items', updatedItems);
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Work image upload failed", error);
+        alert("Görsel yüklenemedi.");
+      }
     }
   }, [content.references.items, updateNested]);
 
@@ -146,7 +170,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
       timestamp: new Date().toISOString(),
       version: '1.0'
     };
-    
+
     const blob = new Blob([JSON.stringify(fullState, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -172,7 +196,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
     reader.onload = (event) => {
       try {
         const restoredData = JSON.parse(event.target?.result as string);
-        
+
         if (!restoredData.content || !restoredData.users) {
           throw new Error('Geçersiz yedek dosyası formatı.');
         }
@@ -182,7 +206,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
         onUpdateClients(restoredData.clients || []);
         onUpdateUsers(restoredData.users);
         onUpdateMessages(restoredData.messages || []);
-        
+
         // Manual localstorage sync to be extra safe before reload
         localStorage.setItem('agencyos_content', JSON.stringify(restoredData.content));
         localStorage.setItem('agencyos_clients', JSON.stringify(restoredData.clients || []));
@@ -207,9 +231,9 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
           { id: 'VITRINE', label: 'HİZMET VİTRİNİ', icon: MousePointer2 },
           { id: 'FOOTER_TAGS', label: 'FOOTER SLOGANLARI', icon: Layout }
         ].map(st => (
-          <button 
-            key={st.id} 
-            onClick={() => setSubTab(st.id)} 
+          <button
+            key={st.id}
+            onClick={() => setSubTab(st.id)}
             className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest ${subTab === st.id ? 'bg-[#0D1225] border-white/10 text-orange-500 shadow-xl' : 'bg-white/5 border-white/5 text-slate-600'}`}
           >
             {st.label} <st.icon size={14} />
@@ -220,24 +244,24 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
         {subTab === 'HERO' && (
           <div className="space-y-8 animate-in fade-in">
             <div className="grid grid-cols-3 gap-4">
-              <InputField label="BAŞLIK SATIR 1" value={content.hero.titlePart1} onChange={(v: string)=>updateNested('hero.titlePart1', v)} />
-              <InputField label="BAŞLIK SATIR 2" value={content.hero.titlePart2} onChange={(v: string)=>updateNested('hero.titlePart2', v)} />
-              <InputField label="BAŞLIK SATIR 3" value={content.hero.titlePart3} onChange={(v: string)=>updateNested('hero.titlePart3', v)} />
+              <InputField label="BAŞLIK SATIR 1" value={content.hero.titlePart1} onChange={(v: string) => updateNested('hero.titlePart1', v)} />
+              <InputField label="BAŞLIK SATIR 2" value={content.hero.titlePart2} onChange={(v: string) => updateNested('hero.titlePart2', v)} />
+              <InputField label="BAŞLIK SATIR 3" value={content.hero.titlePart3} onChange={(v: string) => updateNested('hero.titlePart3', v)} />
             </div>
-            <InputField label="HERO ALT METNİ" type="textarea" value={content.hero.subtitle} onChange={(v: string)=>updateNested('hero.subtitle', v)} />
+            <InputField label="HERO ALT METNİ" type="textarea" value={content.hero.subtitle} onChange={(v: string) => updateNested('hero.subtitle', v)} />
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="ANA CTA BUTON" value={content.hero.primaryCTA} onChange={(v: string)=>updateNested('hero.primaryCTA', v)} />
-              <InputField label="İKİNCİL CTA BUTON" value={content.hero.secondaryCTA} onChange={(v: string)=>updateNested('hero.secondaryCTA', v)} />
+              <InputField label="ANA CTA BUTON" value={content.hero.primaryCTA} onChange={(v: string) => updateNested('hero.primaryCTA', v)} />
+              <InputField label="İKİNCİL CTA BUTON" value={content.hero.secondaryCTA} onChange={(v: string) => updateNested('hero.secondaryCTA', v)} />
             </div>
           </div>
         )}
         {subTab === 'FOOTER_TAGS' && (
           <div className="space-y-6 animate-in fade-in">
-            <InputField label="FOOTER TELİF METNİ" value={content.branding.footerText} onChange={(v: string)=>updateNested('branding.footerText', v)} />
+            <InputField label="FOOTER TELİF METNİ" value={content.branding.footerText} onChange={(v: string) => updateNested('branding.footerText', v)} />
             <div className="grid grid-cols-3 gap-4">
-              <InputField label="SLOGAN 1" value={content.branding.footerTagline1} onChange={(v: string)=>updateNested('branding.footerTagline1', v)} />
-              <InputField label="SLOGAN 2" value={content.branding.footerTagline2} onChange={(v: string)=>updateNested('branding.footerTagline2', v)} />
-              <InputField label="SLOGAN 3" value={content.branding.footerTagline3} onChange={(v: string)=>updateNested('branding.footerTagline3', v)} />
+              <InputField label="SLOGAN 1" value={content.branding.footerTagline1} onChange={(v: string) => updateNested('branding.footerTagline1', v)} />
+              <InputField label="SLOGAN 2" value={content.branding.footerTagline2} onChange={(v: string) => updateNested('branding.footerTagline2', v)} />
+              <InputField label="SLOGAN 3" value={content.branding.footerTagline3} onChange={(v: string) => updateNested('branding.footerTagline3', v)} />
             </div>
           </div>
         )}
@@ -264,8 +288,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
           <div key={nav.id} className="bg-black/20 p-5 rounded-2xl border border-white/5 flex items-center justify-between group">
             <div className="flex items-center gap-6 flex-1">
               <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-orange-500"><Navigation size={18} /></div>
-              <input 
-                value={nav.label} 
+              <input
+                value={nav.label}
                 onChange={(e) => {
                   const newList = [...content.navigation];
                   newList[idx].label = e.target.value;
@@ -274,7 +298,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 className="bg-transparent text-white font-black text-xs uppercase outline-none focus:border-b border-orange-500/30 flex-1"
               />
             </div>
-            <button 
+            <button
               onClick={() => {
                 const newList = [...content.navigation];
                 newList[idx].isEnabled = !newList[idx].isEnabled;
@@ -282,7 +306,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
               }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${nav.isEnabled ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}
             >
-              {nav.isEnabled ? <Eye size={12}/> : <EyeOff size={12}/>} {nav.isEnabled ? 'AÇIK' : 'KAPALI'}
+              {nav.isEnabled ? <Eye size={12} /> : <EyeOff size={12} />} {nav.isEnabled ? 'AÇIK' : 'KAPALI'}
             </button>
           </div>
         ))}
@@ -301,9 +325,9 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
           { id: 'CONTACT', label: 'İLETİŞİM', icon: Phone },
           { id: 'LEGAL_PAGES', label: 'YASAL & SEO', icon: Shield }
         ].map(p => (
-          <button 
-            key={p.id} 
-            onClick={() => { setSubTab(p.id); setEditingId(null); }} 
+          <button
+            key={p.id}
+            onClick={() => { setSubTab(p.id); setEditingId(null); }}
             className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest ${subTab === p.id ? 'bg-[#0D1225] border-white/10 text-orange-500 shadow-xl' : 'bg-white/5 border-white/5 text-slate-600'}`}
           >
             {p.label} <p.icon size={14} />
@@ -333,20 +357,20 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 <button onClick={() => setEditingId(null)} className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4 hover:text-white transition-colors">← Geri</button>
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-6">
-                    <InputField label="HİZMET BAŞLIĞI" value={content.services.find(s=>s.id===editingId)?.title} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, title: v.toUpperCase() } : s))} />
-                    <InputField label="ALT BAŞLIK / TAGLINE" value={content.services.find(s=>s.id===editingId)?.tagline} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, tagline: v } : s))} />
+                    <InputField label="HİZMET BAŞLIĞI" value={content.services.find(s => s.id === editingId)?.title} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, title: v.toUpperCase() } : s))} />
+                    <InputField label="ALT BAŞLIK / TAGLINE" value={content.services.find(s => s.id === editingId)?.tagline} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, tagline: v } : s))} />
                   </div>
-                  <Dropzone label="HİZMET KAPAK GÖRSELİ" currentImage={content.services.find(s=>s.id===editingId)?.image} onUpload={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, image: v } : s))} />
+                  <Dropzone label="HİZMET KAPAK GÖRSELİ" currentImage={content.services.find(s => s.id === editingId)?.image} onUpload={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, image: v } : s))} />
                 </div>
-                
+
                 <div className="space-y-4">
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">İKON SEÇİCİ</label>
                   <div className="grid grid-cols-10 gap-2 bg-black/40 p-4 rounded-2xl border border-white/5 max-h-40 overflow-y-auto custom-scrollbar">
                     {RICH_ICONS.map(i => (
-                      <button 
-                        key={i.id} 
-                        onClick={() => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, iconType: i.id } : s))} 
-                        className={`p-3 rounded-xl border transition-all flex items-center justify-center ${content.services.find(s=>s.id===editingId)?.iconType === i.id ? 'bg-orange-600 border-orange-500 text-white shadow-lg' : 'bg-black/40 border-white/5 text-slate-600 hover:text-white'}`}
+                      <button
+                        key={i.id}
+                        onClick={() => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, iconType: i.id } : s))}
+                        className={`p-3 rounded-xl border transition-all flex items-center justify-center ${content.services.find(s => s.id === editingId)?.iconType === i.id ? 'bg-orange-600 border-orange-500 text-white shadow-lg' : 'bg-black/40 border-white/5 text-slate-600 hover:text-white'}`}
                       >
                         <i.icon size={16} />
                       </button>
@@ -357,28 +381,28 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 <div className="space-y-4">
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">HİZMET ÖZELLİKLERİ / TAGLAR</label>
                   <div className="flex flex-wrap gap-2 items-center bg-black/40 p-5 rounded-2xl border border-white/5 min-h-[70px]">
-                    {content.services.find(s=>s.id===editingId)?.features.map((feature, fIdx) => (
+                    {content.services.find(s => s.id === editingId)?.features.map((feature, fIdx) => (
                       <span key={fIdx} className="bg-orange-600/20 text-orange-500 text-[9px] font-black px-4 py-2 rounded-xl flex items-center gap-3 border border-orange-500/20">
-                        {feature} 
+                        {feature}
                         <button onClick={() => {
-                          const currentService = content.services.find(s=>s.id===editingId);
-                          if(currentService){
+                          const currentService = content.services.find(s => s.id === editingId);
+                          if (currentService) {
                             const newFeatures = currentService.features.filter((_, i) => i !== fIdx);
                             updateNested('services', content.services.map(s => s.id === editingId ? { ...s, features: newFeatures } : s));
                           }
                         }} className="hover:text-white transition-colors">
-                          <X size={12}/>
+                          <X size={12} />
                         </button>
                       </span>
                     ))}
                     <div className="relative flex-1 min-w-[200px]">
-                      <input 
-                        placeholder="YENİ ÖZELLİK EKLE + ENTER" 
+                      <input
+                        placeholder="YENİ ÖZELLİK EKLE + ENTER"
                         className="w-full bg-transparent border-none outline-none text-[10px] font-black uppercase text-white px-3"
                         onKeyDown={(e) => {
-                          if(e.key === 'Enter' && e.currentTarget.value.trim()){
-                            const currentService = content.services.find(s=>s.id===editingId);
-                            if(currentService){
+                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                            const currentService = content.services.find(s => s.id === editingId);
+                            if (currentService) {
                               const newFeatures = [...currentService.features, e.currentTarget.value.trim().toUpperCase()];
                               updateNested('services', content.services.map(s => s.id === editingId ? { ...s, features: newFeatures } : s));
                               e.currentTarget.value = '';
@@ -391,11 +415,11 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
-                  <InputField label="KISA AÇIKLAMA (LİSTE EKRANI)" type="textarea" value={content.services.find(s=>s.id===editingId)?.desc} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, desc: v } : s))} />
-                  <InputField label="DETAYLI İÇERİK (HİZMET SAYFASI)" type="textarea" value={content.services.find(s=>s.id===editingId)?.detailedDesc} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, detailedDesc: v } : s))} />
+                  <InputField label="KISA AÇIKLAMA (LİSTE EKRANI)" type="textarea" value={content.services.find(s => s.id === editingId)?.desc} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, desc: v } : s))} />
+                  <InputField label="DETAYLI İÇERİK (HİZMET SAYFASI)" type="textarea" value={content.services.find(s => s.id === editingId)?.detailedDesc} onChange={(v: string) => updateNested('services', content.services.map(s => s.id === editingId ? { ...s, detailedDesc: v } : s))} />
                 </div>
 
-                <button onClick={() => { if(confirm('Bu hizmeti silmek istediğinize emin misiniz?')){ updateNested('services', content.services.filter(s => s.id !== editingId)); setEditingId(null); } }} className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:text-rose-400">HİZMETİ SİL</button>
+                <button onClick={() => { if (confirm('Bu hizmeti silmek istediğinize emin misiniz?')) { updateNested('services', content.services.filter(s => s.id !== editingId)); setEditingId(null); } }} className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:text-rose-400">HİZMETİ SİL</button>
               </div>
             )}
           </div>
@@ -408,7 +432,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 {content.references.items.map(r => (
                   <div key={r.id} onClick={() => setEditingId(r.id)} className="p-6 bg-black/20 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-orange-500/30 transition-all">
                     <div className="w-12 h-12 bg-white rounded-lg p-2 flex items-center justify-center shadow-lg">
-                      {r.logo ? <img src={r.logo} className="w-full h-full object-contain" /> : <Star size={20} className="text-slate-300"/>}
+                      {r.logo ? <img src={r.logo} className="w-full h-full object-contain" /> : <Star size={20} className="text-slate-300" />}
                     </div>
                     <span className="text-[10px] font-black text-white uppercase truncate w-full text-center">{r.name}</span>
                   </div>
@@ -424,13 +448,13 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 <button onClick={() => setEditingId(null)} className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4 hover:text-white transition-colors">← Geri</button>
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-6">
-                    <InputField label="MARKA ADI" value={content.references.items.find(r=>r.id===editingId)?.name} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, name: v.toUpperCase() } : r))} />
-                    <InputField label="KATEGORİ" value={content.references.items.find(r=>r.id===editingId)?.category} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, category: v.toUpperCase() } : r))} />
+                    <InputField label="MARKA ADI" value={content.references.items.find(r => r.id === editingId)?.name} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, name: v.toUpperCase() } : r))} />
+                    <InputField label="KATEGORİ" value={content.references.items.find(r => r.id === editingId)?.category} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, category: v.toUpperCase() } : r))} />
                   </div>
-                  <Dropzone label="MARKA LOGOSU" aspect="aspect-square" currentImage={content.references.items.find(r=>r.id===editingId)?.logo} onUpload={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, logo: v } : r))} />
+                  <Dropzone label="MARKA LOGOSU" aspect="aspect-square" currentImage={content.references.items.find(r => r.id === editingId)?.logo} onUpload={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, logo: v } : r))} />
                 </div>
-                
-                <InputField label="PROJE AÇIKLAMASI" type="textarea" value={content.references.items.find(r=>r.id===editingId)?.description} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, description: v } : r))} />
+
+                <InputField label="PROJE AÇIKLAMASI" type="textarea" value={content.references.items.find(r => r.id === editingId)?.description} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, description: v } : r))} />
 
                 <div className="space-y-6 pt-10 border-t border-white/5">
                   <div className="flex justify-between items-center px-1">
@@ -441,11 +465,11 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                     </label>
                   </div>
                   <div className="grid grid-cols-4 gap-4">
-                    {content.references.items.find(r=>r.id===editingId)?.workImages?.map((img, idx) => (
+                    {content.references.items.find(r => r.id === editingId)?.workImages?.map((img, idx) => (
                       <div key={idx} className="aspect-video rounded-xl overflow-hidden relative group border border-white/10 shadow-xl bg-black/40">
                         <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                        <button 
-                          onClick={() => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, workImages: r.workImages.filter((_, i) => i !== idx) } : r))} 
+                        <button
+                          onClick={() => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, workImages: r.workImages.filter((_, i) => i !== idx) } : r))}
                           className="absolute inset-0 bg-rose-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Trash2 size={16} className="text-white" />
@@ -454,7 +478,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                     ))}
                   </div>
                 </div>
-                <button onClick={() => { if(confirm('Bu referansı silmek istediğinize emin misiniz?')){ updateNested('references.items', content.references.items.filter(r => r.id !== editingId)); setEditingId(null); } }} className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:text-rose-400 mt-10">REFERANSI SİL</button>
+                <button onClick={() => { if (confirm('Bu referansı silmek istediğinize emin misiniz?')) { updateNested('references.items', content.references.items.filter(r => r.id !== editingId)); setEditingId(null); } }} className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:text-rose-400 mt-10">REFERANSI SİL</button>
               </div>
             )}
           </div>
@@ -464,18 +488,18 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
           <div className="space-y-12 animate-in fade-in pb-40">
             <div className="space-y-6">
               <h5 className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-b border-white/5 pb-2">MANİFESTO SAYFASI</h5>
-              <InputField label="BAŞLIK" value={content.corporate.manifesto.title} onChange={(v: string)=>updateNested('corporate.manifesto.title', v)} />
-              <InputField label="İÇERİK" type="textarea" value={content.corporate.manifesto.content} onChange={(v: string)=>updateNested('corporate.manifesto.content', v)} />
+              <InputField label="BAŞLIK" value={content.corporate.manifesto.title} onChange={(v: string) => updateNested('corporate.manifesto.title', v)} />
+              <InputField label="İÇERİK" type="textarea" value={content.corporate.manifesto.content} onChange={(v: string) => updateNested('corporate.manifesto.content', v)} />
               <div className="space-y-3">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">İKON SEÇİCİ</label>
                 <div className="grid grid-cols-5 gap-2 bg-black/40 p-4 rounded-2xl border border-white/5">
                   {FOX_ICONS.map(f => (
-                    <button 
-                      key={f} 
-                      onClick={() => updateNested('corporate.manifesto.icon', f)} 
+                    <button
+                      key={f}
+                      onClick={() => updateNested('corporate.manifesto.icon', f)}
                       className={`p-4 rounded-xl border text-[8px] font-black transition-all ${content.corporate.manifesto.icon === f ? 'bg-orange-600 border-orange-500 text-white shadow-lg' : 'bg-black/40 border-transparent text-slate-600 hover:text-white'}`}
                     >
-                      {f.replace('Fox','')}
+                      {f.replace('Fox', '')}
                     </button>
                   ))}
                 </div>
@@ -483,49 +507,49 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
             </div>
             <div className="space-y-6 pt-10 border-t border-white/5">
               <h5 className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-b border-white/5 pb-2">HAKKIMIZDA SAYFASI</h5>
-              <InputField label="BAŞLIK" value={content.corporate.about.title} onChange={(v: string)=>updateNested('corporate.about.title', v)} />
-              <InputField label="İÇERİK" type="textarea" value={content.corporate.about.content} onChange={(v: string)=>updateNested('corporate.about.content', v)} />
+              <InputField label="BAŞLIK" value={content.corporate.about.title} onChange={(v: string) => updateNested('corporate.about.title', v)} />
+              <InputField label="İÇERİK" type="textarea" value={content.corporate.about.content} onChange={(v: string) => updateNested('corporate.about.content', v)} />
             </div>
           </div>
         )}
 
         {subTab === 'BLOG_PAGE' && (
           <div className="space-y-6 animate-in fade-in pb-40">
-             <InputField label="MAKALE ÜST BAŞLIK" value={content.blogPage?.topTitle} onChange={(v: string)=>updateNested('blogPage.topTitle', v)} />
-             <div className="grid grid-cols-2 gap-4">
-                <InputField label="ANA BAŞLIK 1" value={content.blogPage?.mainTitle1} onChange={(v: string)=>updateNested('blogPage.mainTitle1', v)} />
-                <InputField label="ANA BAŞLIK 2" value={content.blogPage?.mainTitle2} onChange={(v: string)=>updateNested('blogPage.mainTitle2', v)} />
-             </div>
-             <InputField label="GENEL AÇIKLAMA" type="textarea" value={content.blogPage?.description} onChange={(v: string)=>updateNested('blogPage.description', v)} />
+            <InputField label="MAKALE ÜST BAŞLIK" value={content.blogPage?.topTitle} onChange={(v: string) => updateNested('blogPage.topTitle', v)} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="ANA BAŞLIK 1" value={content.blogPage?.mainTitle1} onChange={(v: string) => updateNested('blogPage.mainTitle1', v)} />
+              <InputField label="ANA BAŞLIK 2" value={content.blogPage?.mainTitle2} onChange={(v: string) => updateNested('blogPage.mainTitle2', v)} />
+            </div>
+            <InputField label="GENEL AÇIKLAMA" type="textarea" value={content.blogPage?.description} onChange={(v: string) => updateNested('blogPage.description', v)} />
           </div>
         )}
 
         {subTab === 'CONTACT' && (
           <div className="space-y-8 animate-in fade-in pb-40">
-             <h5 className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-b border-white/5 pb-2">İLETİŞİM BİLGİLERİ</h5>
-             <div className="grid grid-cols-2 gap-4">
-                <InputField label="E-POSTA" value={content.contact.email} onChange={(v: string)=>updateNested('contact.email', v)} />
-                <InputField label="TELEFON" value={content.contact.phone} onChange={(v: string)=>updateNested('contact.phone', v)} />
-             </div>
-             <InputField label="ADRES" type="textarea" value={content.contact.address} onChange={(v: string)=>updateNested('contact.address', v)} />
-             <div className="grid grid-cols-3 gap-2 pt-6 border-t border-white/5">
-                {[
-                  { k: 'contact.showEmail', l: 'E-POSTA GÖSTER' },
-                  { k: 'contact.showPhone', l: 'TEL GÖSTER' },
-                  { k: 'contact.showAddress', l: 'ADRES GÖSTER' }
-                ].map(item => (
-                  <button 
-                    key={item.k} 
-                    onClick={() => {
-                      const keys = item.k.split('.');
-                      updateNested(item.k, !(content.contact as any)[keys[1]]);
-                    }} 
-                    className={`p-4 rounded-xl border text-[9px] font-black uppercase transition-all ${(content.contact as any)[item.k.split('.')[1]] ? 'bg-orange-600/10 border-orange-500/30 text-orange-500 shadow-xl' : 'bg-black/40 border-white/5 text-slate-700'}`}
-                  >
-                    {item.l}
-                  </button>
-                ))}
-             </div>
+            <h5 className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-b border-white/5 pb-2">İLETİŞİM BİLGİLERİ</h5>
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="E-POSTA" value={content.contact.email} onChange={(v: string) => updateNested('contact.email', v)} />
+              <InputField label="TELEFON" value={content.contact.phone} onChange={(v: string) => updateNested('contact.phone', v)} />
+            </div>
+            <InputField label="ADRES" type="textarea" value={content.contact.address} onChange={(v: string) => updateNested('contact.address', v)} />
+            <div className="grid grid-cols-3 gap-2 pt-6 border-t border-white/5">
+              {[
+                { k: 'contact.showEmail', l: 'E-POSTA GÖSTER' },
+                { k: 'contact.showPhone', l: 'TEL GÖSTER' },
+                { k: 'contact.showAddress', l: 'ADRES GÖSTER' }
+              ].map(item => (
+                <button
+                  key={item.k}
+                  onClick={() => {
+                    const keys = item.k.split('.');
+                    updateNested(item.k, !(content.contact as any)[keys[1]]);
+                  }}
+                  className={`p-4 rounded-xl border text-[9px] font-black uppercase transition-all ${(content.contact as any)[item.k.split('.')[1]] ? 'bg-orange-600/10 border-orange-500/30 text-orange-500 shadow-xl' : 'bg-black/40 border-white/5 text-slate-700'}`}
+                >
+                  {item.l}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -536,17 +560,17 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 <Search size={16} /> GOOGLE & SEO AYARLARI
               </h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InputField label="SİTE META BAŞLIĞI (TITLE)" value={content.seo.siteTitle} onChange={(v: string)=>updateNested('seo.siteTitle', v)} />
-                <InputField label="SİTE ANAHTAR KELİMELERİ" value={content.seo.metaKeywords} onChange={(v: string)=>updateNested('seo.metaKeywords', v)} />
+                <InputField label="SİTE META BAŞLIĞI (TITLE)" value={content.seo.siteTitle} onChange={(v: string) => updateNested('seo.siteTitle', v)} />
+                <InputField label="SİTE ANAHTAR KELİMELERİ" value={content.seo.metaKeywords} onChange={(v: string) => updateNested('seo.metaKeywords', v)} />
               </div>
-              <InputField label="SİTE META AÇIKLAMASI (DESCRIPTION)" type="textarea" value={content.seo.siteDescription} onChange={(v: string)=>updateNested('seo.siteDescription', v)} />
+              <InputField label="SİTE META AÇIKLAMASI (DESCRIPTION)" type="textarea" value={content.seo.siteDescription} onChange={(v: string) => updateNested('seo.siteDescription', v)} />
             </div>
 
             <div className="space-y-6 pt-10 border-t border-white/5">
               <h5 className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-b border-white/5 pb-2 flex items-center gap-3">
                 <Shield size={16} /> KVKK AYDINLATMA METNİ
               </h5>
-              <InputField label="METİN İÇERİĞİ" type="textarea" value={content.legal.kvkk} onChange={(v: string)=>updateNested('legal.kvkk', v)} />
+              <InputField label="METİN İÇERİĞİ" type="textarea" value={content.legal.kvkk} onChange={(v: string) => updateNested('legal.kvkk', v)} />
             </div>
           </div>
         )}
@@ -558,15 +582,15 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
     <div className="bg-[#0D1225] p-12 rounded-[4rem] border border-white/10 space-y-12 max-w-4xl animate-in fade-in shadow-2xl overflow-visible pb-40">
       <div className="grid grid-cols-2 gap-10">
         <div className="space-y-6">
-          <Dropzone label="ANA LOGO (BEYAZ)" currentImage={content.branding.logoUrl} onUpload={(v: string)=>updateNested('branding.logoUrl', v)} />
-          <InputField label="SEO SİTE BAŞLIĞI" value={content.seo.siteTitle} onChange={(v: string)=>updateNested('seo.siteTitle', v)} />
+          <Dropzone label="ANA LOGO (BEYAZ)" currentImage={content.branding.logoUrl} onUpload={(v: string) => updateNested('branding.logoUrl', v)} />
+          <InputField label="SEO SİTE BAŞLIĞI" value={content.seo.siteTitle} onChange={(v: string) => updateNested('seo.siteTitle', v)} />
         </div>
         <div className="space-y-3">
-          <InputField label="FOOTER TELİF METNİ" value={content.branding.footerText} onChange={(v: string)=>updateNested('branding.footerText', v)} />
-          <InputField label="SEO SİTE AÇIKLAMASI" type="textarea" value={content.seo.siteDescription} onChange={(v: string)=>updateNested('seo.siteDescription', v)} />
+          <InputField label="FOOTER TELİF METNİ" value={content.branding.footerText} onChange={(v: string) => updateNested('branding.footerText', v)} />
+          <InputField label="SEO SİTE AÇIKLAMASI" type="textarea" value={content.seo.siteDescription} onChange={(v: string) => updateNested('seo.siteDescription', v)} />
         </div>
       </div>
-      
+
       <div className="pt-8 border-t border-white/5 space-y-8 pb-20">
         <div className="flex justify-between items-center">
           <h5 className="text-[11px] font-black uppercase text-orange-500 tracking-[0.4em]">SOSYAL MEDYA HESAPLARI</h5>
@@ -581,32 +605,32 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
             return (
               <div key={i} className="flex gap-4 items-center bg-black/20 p-6 rounded-[2.5rem] border border-white/5 group relative shadow-inner">
                 <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-orange-500 border border-white/5 shrink-0">
-                   <CurrentIcon size={20} />
+                  <CurrentIcon size={20} />
                 </div>
                 <div className="flex-1 space-y-3">
                   <div className="flex justify-between items-center">
-                    <select 
-                      value={s.platform} 
+                    <select
+                      value={s.platform}
                       onChange={(e) => {
-                        const n = [...content.branding.socials]; 
-                        n[i].platform = e.target.value; 
+                        const n = [...content.branding.socials];
+                        n[i].platform = e.target.value;
                         updateNested('branding.socials', n);
-                      }} 
+                      }}
                       className="bg-[#050810] text-[10px] font-black text-orange-500 uppercase outline-none focus:text-white transition-colors cursor-pointer p-2 rounded-lg border border-white/5"
                     >
-                       {SOCIAL_PLATFORMS_OPTIONS.map(opt => <option key={opt.id} value={opt.id} className="bg-slate-900">{opt.id}</option>)}
+                      {SOCIAL_PLATFORMS_OPTIONS.map(opt => <option key={opt.id} value={opt.id} className="bg-slate-900">{opt.id}</option>)}
                     </select>
                     <button onClick={() => {
-                      updateNested('branding.socials', content.branding.socials.filter((_, idx)=>idx!==i));
-                    }} className="text-rose-500/20 hover:text-rose-500 transition-colors"><Trash2 size={14}/></button>
+                      updateNested('branding.socials', content.branding.socials.filter((_, idx) => idx !== i));
+                    }} className="text-rose-500/20 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
                   </div>
-                  <input 
+                  <input
                     placeholder="Profil Linki..."
-                    value={s.url} 
+                    value={s.url}
                     onChange={(e) => {
                       const n = [...content.branding.socials]; n[i].url = e.target.value; updateNested('branding.socials', n);
-                    }} 
-                    className="bg-transparent text-[10px] font-mono text-slate-500 w-full outline-none focus:text-indigo-400" 
+                    }}
+                    className="bg-transparent text-[10px] font-mono text-slate-500 w-full outline-none focus:text-indigo-400"
                   />
                 </div>
               </div>
@@ -639,7 +663,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
               Mevcut sistemin tam bir kopyasını (JSON formatında) bilgisayarınıza indirir.
             </p>
           </div>
-          <button 
+          <button
             onClick={handleBackup}
             className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest shadow-xl shadow-orange-950/20"
           >
@@ -658,14 +682,14 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
             </p>
           </div>
           <div className="relative">
-            <input 
-              type="file" 
-              ref={restoreFileRef} 
-              className="hidden" 
-              accept=".json" 
-              onChange={handleRestore} 
+            <input
+              type="file"
+              ref={restoreFileRef}
+              className="hidden"
+              accept=".json"
+              onChange={handleRestore}
             />
-            <button 
+            <button
               onClick={() => restoreFileRef.current?.click()}
               className="w-full bg-white/5 border border-white/10 hover:bg-indigo-600 hover:text-white text-indigo-500 font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest"
             >
@@ -695,21 +719,21 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2">DİJİTAL VARLIK VE SİTE KONTROL MERKEZİ</p>
         </div>
         <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/5 w-fit shadow-2xl">
-           {[
-             { id: 'HOME', label: 'ANASAYFA', icon: Layout },
-             { id: 'NAV', label: 'NAVİGASYON', icon: Navigation },
-             { id: 'PAGES', label: 'SAYFALAR', icon: FileText },
-             { id: 'BRANDING', label: 'KİMLİK & SOSYAL', icon: ImageIcon },
-             { id: 'SYSTEM', label: 'SİSTEM', icon: Database }
-           ].map(tab => (
-              <button 
-                key={tab.id} 
-                onClick={() => { setActiveTab(tab.id as any); setSubTab(tab.id === 'HOME' ? 'HERO' : (tab.id === 'PAGES' ? 'SERVICES' : '')); setEditingId(null); }} 
-                className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase transition-all whitespace-nowrap border ${activeTab === tab.id ? 'bg-orange-600 border-orange-500 text-white shadow-lg' : 'bg-transparent border-transparent text-slate-500 hover:text-white'}`}
-              >
-                <tab.icon size={14} /> {tab.label}
-              </button>
-           ))}
+          {[
+            { id: 'HOME', label: 'ANASAYFA', icon: Layout },
+            { id: 'NAV', label: 'NAVİGASYON', icon: Navigation },
+            { id: 'PAGES', label: 'SAYFALAR', icon: FileText },
+            { id: 'BRANDING', label: 'KİMLİK & SOSYAL', icon: ImageIcon },
+            { id: 'SYSTEM', label: 'SİSTEM', icon: Database }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id as any); setSubTab(tab.id === 'HOME' ? 'HERO' : (tab.id === 'PAGES' ? 'SERVICES' : '')); setEditingId(null); }}
+              className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase transition-all whitespace-nowrap border ${activeTab === tab.id ? 'bg-orange-600 border-orange-500 text-white shadow-lg' : 'bg-transparent border-transparent text-slate-500 hover:text-white'}`}
+            >
+              <tab.icon size={14} /> {tab.label}
+            </button>
+          ))}
         </div>
       </header>
       <div className="flex-1 overflow-visible">
