@@ -4,7 +4,7 @@
  * @param maxWidth Maximum width of the image.
  * @param quality Quality from 0 to 1 (e.g. 0.7).
  */
-export const compressImage = (file: File, maxWidth: number = 600, quality: number = 0.6): Promise<string> => {
+export const compressImage = (file: File, maxWidth: number = 600, quality: number = 0.6, format: 'image/jpeg' | 'image/png' = 'image/jpeg'): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -32,8 +32,8 @@ export const compressImage = (file: File, maxWidth: number = 600, quality: numbe
 
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Convert to JPEG with reduced quality
-                const dataUrl = elem.toDataURL('image/jpeg', quality);
+                // Convert to specified format
+                const dataUrl = elem.toDataURL(format, quality);
                 resolve(dataUrl);
             };
             img.onerror = (err) => reject(err);

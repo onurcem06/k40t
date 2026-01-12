@@ -64,7 +64,9 @@ const Dropzone = memo(({ currentImage, label, onUpload, aspect = "aspect-video",
       try {
         setIsUploading(true);
         // CORS/Storage hatasını aşmak için: İstemci tarafında sıkıştırıp Base64 olarak kaydet
-        const compressedBase64 = await compressImage(file, 800, 0.7);
+        // Eğer dosya PNG ise transparanlığı korumak için PNG formatında işle
+        const format = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const compressedBase64 = await compressImage(file, 800, 0.7, format);
         onUpload(compressedBase64);
       } catch (error) {
         console.error("Compression failed", error);
