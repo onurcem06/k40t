@@ -1,0 +1,14 @@
+{
+    "rules": {
+        ".read": true,
+        ".write": "auth != null",
+        "siteContent": {
+            ".read": true,
+            ".write": true // Client-side auth mode requires open write for admin panel users. WARNING: Secure this with backend auth in future.
+        },
+        "users": {
+            ".read": true, // Required for login check
+            ".write": true // Required for admin management
+        }
+    }
+}

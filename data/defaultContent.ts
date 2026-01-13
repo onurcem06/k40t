@@ -22,14 +22,14 @@ export const INITIAL_CONTENT: SiteContent = {
     footerTagline1: 'DİJİTAL', footerTagline2: 'DENEYİM', footerTagline3: 'MERKEZİ'
   },
   login: { title: 'AGENCY OS ERİŞİM', subtext: 'Kafamda Kırk Tilki Dijital Deneyim Merkezi' },
-  hero: { 
-    titlePart1: 'ZİHNİMİZDE', titlePart2: 'TİLKİLER', titlePart3: 'DOLAŞIYOR', 
-    subtitle: 'Geleneksel reklamcılığın sınırlarını yaratıcı zeka ve klinik veri ile aşıyoruz.', 
-    primaryCTA: 'STRATEJİNİZİ OLUŞTURUN', secondaryCTA: 'MANIFESTO' 
+  hero: {
+    titlePart1: 'ZİHNİMİZDE', titlePart2: 'TİLKİLER', titlePart3: 'DOLAŞIYOR',
+    subtitle: 'Geleneksel reklamcılığın sınırlarını yaratıcı zeka ve klinik veri ile aşıyoruz.',
+    primaryCTA: 'STRATEJİNİZİ OLUŞTURUN', secondaryCTA: 'MANIFESTO'
   },
-  corporate: { 
-    manifesto: { title: 'TİLKİ MANİFESTOSU', content: 'Biz sadece reklam yapmıyoruz; markaların ruhunu dijitalde bulup gün yüzüne çıkarıyoruz.', icon: 'FoxHead' }, 
-    about: { title: 'YAKLAŞIMIMIZ', content: 'Stratejimiz Gözlemle, Analiz Et ve Harekete Geç üzerine kurulu.', icon: 'Target' } 
+  corporate: {
+    manifesto: { title: 'TİLKİ MANİFESTOSU', content: 'Biz sadece reklam yapmıyoruz; markaların ruhunu dijitalde bulup gün yüzüne çıkarıyoruz.', icon: 'FoxHead' },
+    about: { title: 'YAKLAŞIMIMIZ', content: 'Stratejimiz Gözlemle, Analiz Et ve Harekete Geç üzerine kurulu.', icon: 'Target' }
   },
   legal: { privacy: "...", kvkk: "...", terms: "..." },
   services: [
@@ -56,5 +56,6 @@ export const INITIAL_CONTENT: SiteContent = {
 };
 
 export const DEFAULT_USERS: UserAccount[] = [
-  { id: 'admin1', username: 'admin', password: '123', role: UserRole.ADMIN, permissions: { canViewPerformance: true, canEditTasks: true, canUploadAssets: true, canViewFinancials: true } }
+  { id: 'admin1', username: 'admin', password: '', role: UserRole.ADMIN, permissions: { canViewPerformance: true, canEditTasks: true, canUploadAssets: true, canViewFinancials: true } }
 ];
+// SECURITY WARN: The default password is empty. Please set a strong password immediately after deployment via the Admin Panel.
