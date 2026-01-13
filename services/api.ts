@@ -69,7 +69,12 @@ export const ApiService = {
       };
 
       await saveCollection('services', content.services);
-      await saveCollection('references', content.references);
+
+      // References structure handling
+      await set(ref(db, 'siteContent/references/title'), content.references.title);
+      await set(ref(db, 'siteContent/references/description'), content.references.description);
+      await saveCollection('references/items', content.references.items);
+
       await saveCollection('blogPosts', content.blogPosts);
 
       return true;
