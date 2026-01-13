@@ -43,7 +43,7 @@ const ServiceDetail: React.FC<ServiceDetailProps> = ({ view, siteContent, onBack
             </div>
             <p className="text-slate-400 text-lg leading-relaxed font-medium">{service.detailedDesc || service.desc}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {service.features.map((feature, idx) => (
+              {(service.features || []).map((feature, idx) => (
                 <div key={idx} className="flex items-center gap-3 bg-white/5 border border-white/5 p-4 rounded-2xl">
                   <CheckCircle2 size={18} className="text-orange-500 shrink-0" />
                   <span className="text-slate-300 text-xs font-bold uppercase tracking-tight">{feature}</span>
