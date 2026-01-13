@@ -67,7 +67,13 @@ const ReferencesView: React.FC<ReferencesViewProps> = ({ content, onNavigate }) 
                   {/* Actions / Info */}
                   <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
                     {item.link && item.link !== '#' ? (
-                      <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[9px] font-black text-white hover:text-orange-500 transition-colors uppercase tracking-wider">
+                      <a
+                        href={item.link.startsWith('http') ? item.link : `https://${item.link}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-2 text-[9px] font-black text-white hover:text-orange-500 transition-colors uppercase tracking-wider relative z-20"
+                      >
                         İNCELE <ExternalLink size={10} />
                       </a>
                     ) : (

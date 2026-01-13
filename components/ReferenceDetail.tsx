@@ -45,7 +45,7 @@ const ReferenceDetail: React.FC<ReferenceDetailProps> = ({ view, siteContent, on
 
                         {reference.link && reference.link !== '#' && (
                             <a
-                                href={reference.link}
+                                href={reference.link.startsWith('http') ? reference.link : `https://${reference.link}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-3 px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl hover:shadow-orange-900/40"
