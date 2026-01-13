@@ -450,6 +450,9 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 </div>
 
                 <InputField label="PROJE AÇIKLAMASI" type="textarea" value={content.references.items.find(r => r.id === editingId)?.description} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, description: v } : r))} />
+                <div className="mt-6">
+                  <InputField label="WEB SİTESİ LİNKİ (OPSİYONEL)" placeholder="https://..." value={content.references.items.find(r => r.id === editingId)?.link} onChange={(v: string) => updateNested('references.items', content.references.items.map(r => r.id === editingId ? { ...r, link: v } : r))} />
+                </div>
 
                 <div className="space-y-6 pt-10 border-t border-white/5">
                   <div className="flex justify-between items-center px-1">

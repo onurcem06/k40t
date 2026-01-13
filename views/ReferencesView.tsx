@@ -71,7 +71,7 @@ const ReferencesView: React.FC<ReferencesViewProps> = ({ content, onNavigate }) 
                         İNCELE <ExternalLink size={10} />
                       </a>
                     ) : (
-                      <span className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">LİNK YOK</span>
+                      <span></span>
                     )}
 
                     {item.workImages && item.workImages.length > 0 && (
