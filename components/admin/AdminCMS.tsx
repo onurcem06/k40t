@@ -343,7 +343,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 ))}
                 <button onClick={() => {
                   const nId = `S_${Date.now()}`;
-                  updateNested('services', [...content.services, { id: nId, title: 'YENİ HİZMET', tagline: 'Hizmet Alt Başlık', desc: 'Kısa özet...', iconType: 'Target', image: '', accent: '#f97316', features: [], detailedDesc: '', detailedImages: [] }]);
+                  updateNested('services', [...(content.services || []), { id: nId, title: 'YENİ HİZMET', tagline: 'Hizmet Alt Başlık', desc: 'Kısa özet...', iconType: 'Target', image: '', accent: '#f97316', features: [], detailedDesc: '', detailedImages: [] }]);
                   setEditingId(nId);
                 }} className="p-5 border-2 border-dashed border-white/5 rounded-2xl text-[10px] font-black text-slate-600 flex items-center justify-center gap-2 hover:border-orange-500/30 transition-all">+ YENİ HİZMET EKLE</button>
               </div>
@@ -434,7 +434,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
                 ))}
                 <button onClick={() => {
                   const nId = `R_${Date.now()}`;
-                  updateNested('references.items', [...content.references.items, { id: nId, name: 'YENİ MARKA', logo: '', category: 'DİJİTAL', description: 'Marka özeti...', workImages: [], link: '#' }]);
+                  updateNested('references.items', [...(content.references.items || []), { id: nId, name: 'YENİ MARKA', logo: '', category: 'DİJİTAL', description: 'Marka özeti...', workImages: [], link: '#' }]);
                   setEditingId(nId);
                 }} className="p-6 border-2 border-dashed border-white/5 rounded-2xl text-[10px] font-black text-slate-600 flex items-center justify-center gap-2 hover:border-orange-500/30 transition-all">+ MARKA EKLE</button>
               </div>
