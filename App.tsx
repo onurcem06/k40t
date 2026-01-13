@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
 import CookieBanner from './components/ui/CookieBanner.tsx';
 import HomeView from './views/HomeView.tsx';
 import LoginView from './views/LoginView.tsx';
@@ -18,7 +19,7 @@ import { INITIAL_CONTENT, DEFAULT_USERS } from './data/defaultContent.ts';
 import { ViewState, UserRole, SiteContent, ClientProfile, UserAccount, ContactMessage } from './types.ts';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<ViewState>('MARKETING');
+
   const [siteContent, setSiteContent] = useState<SiteContent>(INITIAL_CONTENT);
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [users, setUsers] = useState<UserAccount[]>(() => {
@@ -101,61 +102,123 @@ const App: React.FC = () => {
     );
   }
 
-  const renderView = () => {
-    if (currentUser) {
-      if (currentUser.role === UserRole.ADMIN && view.startsWith('ADMIN')) {
-        return <AdminView
-          content={siteContent}
-          clients={clients}
-          users={users}
-          messages={messages}
-          onLogout={() => { setCurrentUser(null); setView('MARKETING') }}
-          onUpdateContent={handleUpdateContent}
-          onSaveContent={handleSaveContent}
-          onUpdateClients={handleUpdateClients}
-          onUpdateUsers={setUsers}
-          onUpdateMessages={setMessages}
-        />;
-      }
-      if (currentUser.role === UserRole.CLIENT) {
-        return <ClientView content={siteContent} clients={clients} user={currentUser} onLogout={() => { setCurrentUser(null); setView('MARKETING') }} />;
-      }
-      if (currentUser.role === UserRole.EMPLOYEE) {
-        return <EmployeeView content={siteContent} tasks={[]} onLogout={() => { setCurrentUser(null); setView('MARKETING') }} />;
-      }
+  const navigate = useNavigate();
+  // const [view, setView] = useState<ViewState>('MARKETING'); // Removed
+
+  const handleNavigate = (view: ViewState) => {
+    const staticRoutes: { [key: string]: string } = {
+      'MARKETING': '/',
+      'HOME': '/',
+      'SERVICES_LIST': '/hizmetler',
+      'BLOG': '/blog',
+      'REFERENCES': '/referanslar',
+      'MANIFESTO': '/manifesto',
+      'ABOUT': '/hakkimizda',
+      'CONTACT_PAGE': '/iletisim',
+      'LOGIN': '/giris',
+      'ADMIN_DASHBOARD': '/admin',
+      'CLIENT_PORTAL': '/portal',
+      'EMPLOYEE_PORTAL': '/calisan',
+      'PRIVACY_POLICY': '/gizlilik-politikasi',
+      'KVKK_TEXT': '/kvkk',
+      'TERMS_OF_USE': '/kullanim-kosullari',
+    };
+
+    if (staticRoutes[view]) {
+      navigate(staticRoutes[view]);
+      return;
     }
 
-    const isServiceDetail = siteContent.services.some(s => s.id === view);
-    const isBlogPostDetail = siteContent.blogPosts.some(p => p.id === view);
+    if (siteContent.services.some(s => s.id === view)) {
+      navigate(`/hizmetler/${view}`);
+      return;
+    }
+    if (siteContent.blogPosts.some(p => p.id === view)) {
+      navigate(`/blog/${view}`);
+      return;
+    }
 
-    if (view === 'MARKETING') return <HomeView content={siteContent} onNavigate={setView} onAddMessage={handleAddMessage} />;
-    if (view === 'SERVICES_LIST') return <ServicesView type="list" siteContent={siteContent} onNavigate={setView} />;
-    if (isServiceDetail) return <ServicesView type="detail" view={view} siteContent={siteContent} onNavigate={setView} />;
-    if (view === 'BLOG') return <BlogView posts={siteContent.blogPosts} content={siteContent} onNavigate={setView} />;
-    if (isBlogPostDetail) return <BlogView posts={siteContent.blogPosts} content={siteContent} onNavigate={setView} initialPostId={view} />;
-    if (view === 'REFERENCES') return <ReferencesView content={siteContent} onNavigate={setView} />;
-    if (['MANIFESTO', 'ABOUT'].includes(view)) return <AboutView type={view.toLowerCase() as any} content={siteContent} onNavigate={setView} />;
-    if (view === 'CONTACT_PAGE') return <ContactView content={siteContent} onNavigate={setView} onAddMessage={handleAddMessage} />;
-    if (view === 'LOGIN') return <LoginView content={siteContent} users={users} onLoginAttempt={(u, p) => {
-      const user = users.find(x => x.username === u && x.password === p);
-      if (user) {
-        setCurrentUser(user);
-        if (user.role === UserRole.ADMIN) setView('ADMIN_DASHBOARD');
-        else if (user.role === UserRole.CLIENT) setView('CLIENT_PORTAL');
-        else setView('EMPLOYEE_PORTAL');
-        return true;
-      }
-      return false;
-    }} onNavigate={setView} />;
-    if (['PRIVACY_POLICY', 'KVKK_TEXT', 'TERMS_OF_USE'].includes(view)) return <LegalView type={view as any} content={siteContent} onNavigate={setView} />;
+    navigate('/');
+  };
 
-    return <HomeView content={siteContent} onNavigate={setView} onAddMessage={handleAddMessage} />;
+  // Wrapper Components for Dynamic Routes
+  const ServiceRouteWrapper = () => {
+    const { id } = useParams();
+    return <ServicesView type="detail" view={id} siteContent={siteContent} onNavigate={handleNavigate} />;
+  };
+
+  const BlogRouteWrapper = () => {
+    const { id } = useParams();
+    return <BlogView posts={siteContent.blogPosts} content={siteContent} onNavigate={handleNavigate} initialPostId={id} />;
   };
 
   return (
     <div className="min-h-screen text-slate-50 overflow-x-hidden relative bg-[#020617]">
       <div className="relative z-10 w-full min-h-screen bg-transparent">
-        {renderView()}
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomeView content={siteContent} onNavigate={handleNavigate} onAddMessage={handleAddMessage} />} />
+          <Route path="/hizmetler" element={<ServicesView type="list" siteContent={siteContent} onNavigate={handleNavigate} />} />
+          <Route path="/hizmetler/:id" element={<ServiceRouteWrapper />} />
+          <Route path="/blog" element={<BlogView posts={siteContent.blogPosts} content={siteContent} onNavigate={handleNavigate} />} />
+          <Route path="/blog/:id" element={<BlogRouteWrapper />} />
+          <Route path="/referanslar" element={<ReferencesView content={siteContent} onNavigate={handleNavigate} />} />
+          <Route path="/manifesto" element={<AboutView type="manifesto" content={siteContent} onNavigate={handleNavigate} />} />
+          <Route path="/hakkimizda" element={<AboutView type="about" content={siteContent} onNavigate={handleNavigate} />} />
+          <Route path="/iletisim" element={<ContactView content={siteContent} onNavigate={handleNavigate} onAddMessage={handleAddMessage} />} />
+
+          {/* Legal Routes */}
+          <Route path="/gizlilik-politikasi" element={<LegalView type="PRIVACY_POLICY" content={siteContent} onNavigate={handleNavigate} />} />
+          <Route path="/kvkk" element={<LegalView type="KVKK_TEXT" content={siteContent} onNavigate={handleNavigate} />} />
+          <Route path="/kullanim-kosullari" element={<LegalView type="TERMS_OF_USE" content={siteContent} onNavigate={handleNavigate} />} />
+
+          {/* Login & Protected Routes */}
+          <Route path="/giris" element={
+            <LoginView content={siteContent} users={users} onLoginAttempt={(u, p) => {
+              const user = users.find(x => x.username === u && x.password === p);
+              if (user) {
+                setCurrentUser(user);
+                if (user.role === UserRole.ADMIN) navigate('/admin');
+                else if (user.role === UserRole.CLIENT) navigate('/portal');
+                else navigate('/calisan');
+                return true;
+              }
+              return false;
+            }} onNavigate={handleNavigate} />
+          } />
+
+          <Route path="/admin" element={
+            currentUser?.role === UserRole.ADMIN ? (
+              <AdminView
+                content={siteContent}
+                clients={clients}
+                users={users}
+                messages={messages}
+                onLogout={() => { setCurrentUser(null); navigate('/'); }}
+                onUpdateContent={handleUpdateContent}
+                onSaveContent={handleSaveContent}
+                onUpdateClients={handleUpdateClients}
+                onUpdateUsers={setUsers}
+                onUpdateMessages={setMessages}
+              />
+            ) : <Navigate to="/giris" />
+          } />
+
+          <Route path="/portal" element={
+            currentUser?.role === UserRole.CLIENT ? (
+              <ClientView content={siteContent} clients={clients} user={currentUser} onLogout={() => { setCurrentUser(null); navigate('/'); }} />
+            ) : <Navigate to="/giris" />
+          } />
+
+          <Route path="/calisan" element={
+            currentUser?.role === UserRole.EMPLOYEE ? (
+              <EmployeeView content={siteContent} tasks={[]} onLogout={() => { setCurrentUser(null); navigate('/'); }} />
+            ) : <Navigate to="/giris" />
+          } />
+
+          {/* Catch All */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
       </div>
       <CookieBanner />
     </div>
