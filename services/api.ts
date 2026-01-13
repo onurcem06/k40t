@@ -159,7 +159,11 @@ export const ApiService = {
       const snapshot = await get(child(dbRef, 'users'));
       if (snapshot.exists()) {
         const data = snapshot.val();
-        return Array.isArray(data) ? data : Object.values(data);
+        // Force conversion to array if object
+        if (!Array.isArray(data)) {
+          return Object.values(data);
+        }
+        return data;
       }
       return [];
     } catch (error) {
