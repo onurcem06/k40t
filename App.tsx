@@ -39,12 +39,11 @@ const App: React.FC = () => {
   });
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Loading state removed for immediate render
+  // const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initData = async () => {
-      const startTime = Date.now();
-
       try {
         const [remoteContent, remoteClients, remoteMessages] = await Promise.all([
           ApiService.getSiteContent(),
@@ -56,11 +55,7 @@ const App: React.FC = () => {
         if (remoteClients) setClients(remoteClients);
         if (remoteMessages) setMessages(remoteMessages);
       } catch (err) {
-        // Sessiz hata yönetimi - INITIAL_CONTENT zaten set edildi
-      } finally {
-        const elapsed = Date.now() - startTime;
-        const delay = Math.max(0, 1500 - elapsed);
-        setTimeout(() => setIsLoading(false), delay);
+        console.error("Data init error", err);
       }
     };
     initData();
@@ -92,26 +87,6 @@ const App: React.FC = () => {
     setMessages(newMessages);
     await ApiService.sendMessage(msg);
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center overflow-hidden">
-        <div className="flex flex-col items-center gap-10 animate-in fade-in zoom-in-95 duration-1000">
-          <div className="relative">
-            <div className="w-24 h-24 border-2 border-orange-500/20 rounded-full animate-[spin_3s_linear_infinite]"></div>
-            <div className="absolute inset-0 flex items-center justify-center text-orange-500">
-              <FoxIcons type="FoxHead" size={40} className="animate-pulse" />
-            </div>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <h2 className="text-white font-black text-[10px] uppercase tracking-[0.8em] animate-pulse">AGENCY OS</h2>
-            <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-orange-500/50 to-transparent"></div>
-            <p className="text-slate-500 font-bold text-[8px] uppercase tracking-[0.4em] mt-2">DİJİTAL DENEYİM MERKEZİ YÜKLENİYOR</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const navigate = useNavigate();
   // const [view, setView] = useState<ViewState>('MARKETING'); // Removed
