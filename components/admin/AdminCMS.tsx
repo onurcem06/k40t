@@ -424,7 +424,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({
           <div className="space-y-8 animate-in fade-in pb-40">
             {!editingId ? (
               <div className="grid grid-cols-3 gap-4">
-                {content.references.items.map(r => (
+                {(content.references.items || []).map(r => (
                   <div key={r.id} onClick={() => setEditingId(r.id)} className="p-6 bg-black/20 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-orange-500/30 transition-all">
                     <div className="w-12 h-12 bg-white rounded-lg p-2 flex items-center justify-center shadow-lg">
                       {r.logo ? <img src={r.logo} className="w-full h-full object-contain" /> : <Star size={20} className="text-slate-300" />}

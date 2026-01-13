@@ -135,5 +135,30 @@ export const ApiService = {
       console.error("Firebase getMessages Error:", error);
       return [];
     }
+  },
+
+  getUsers: async (): Promise<UserAccount[]> => {
+    try {
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, 'users'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        return Array.isArray(data) ? data : Object.values(data);
+      }
+      return [];
+    } catch (error) {
+      console.error("Firebase getUsers Error:", error);
+      return [];
+    }
+  },
+
+  saveUsers: async (users: UserAccount[]): Promise<boolean> => {
+    try {
+      await set(ref(db, 'users'), users);
+      return true;
+    } catch (error) {
+      console.error("Firebase saveUsers Error:", error);
+      return false;
+    }
   }
 };

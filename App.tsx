@@ -45,15 +45,20 @@ const App: React.FC = () => {
   useEffect(() => {
     const initData = async () => {
       try {
-        const [remoteContent, remoteClients, remoteMessages] = await Promise.all([
+        const [remoteContent, remoteClients, remoteMessages, remoteUsers] = await Promise.all([
           ApiService.getSiteContent(),
           ApiService.getClients(),
-          ApiService.getMessages()
+          ApiService.getMessages(),
+          ApiService.getUsers()
         ]);
 
         if (remoteContent) setSiteContent(remoteContent);
         if (remoteClients) setClients(remoteClients);
         if (remoteMessages) setMessages(remoteMessages);
+        if (remoteUsers && remoteUsers.length > 0) {
+          setUsers(remoteUsers);
+          localStorage.setItem('agencyos_users', JSON.stringify(remoteUsers));
+        }
       } catch (err) {
         console.error("Data init error", err);
       }
@@ -80,6 +85,12 @@ const App: React.FC = () => {
   const handleUpdateClients = async (updatedClients: ClientProfile[]) => {
     setClients(updatedClients);
     await ApiService.saveClients(updatedClients);
+  };
+
+  const handleUpdateUsers = async (updatedUsers: UserAccount[]) => {
+    setUsers(updatedUsers);
+    localStorage.setItem('agencyos_users', JSON.stringify(updatedUsers));
+    await ApiService.saveUsers(updatedUsers);
   };
 
   const handleAddMessage = async (msg: ContactMessage) => {
@@ -174,7 +185,7 @@ const App: React.FC = () => {
                 onUpdateContent={handleUpdateContent}
                 onSaveContent={handleSaveContent}
                 onUpdateClients={handleUpdateClients}
-                onUpdateUsers={setUsers}
+                onUpdateUsers={handleUpdateUsers}
                 onUpdateMessages={setMessages}
               />
             ) : <Navigate to="/giris" />
