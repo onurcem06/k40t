@@ -18,7 +18,18 @@ export const ApiService = {
       const dbRef = ref(db);
       const snapshot = await get(child(dbRef, 'siteContent'));
       if (snapshot.exists()) {
-        return snapshot.val();
+        const data = snapshot.val();
+        // Firebase array sanitization
+        if (data.services && !Array.isArray(data.services)) {
+          data.services = Object.values(data.services);
+        }
+        if (data.references && data.references.items && !Array.isArray(data.references.items)) {
+          data.references.items = Object.values(data.references.items);
+        }
+        if (data.blogPosts && !Array.isArray(data.blogPosts)) {
+          data.blogPosts = Object.values(data.blogPosts);
+        }
+        return data;
       } else {
         // Veritabanında yoksa varsayılanı yükle ve veritabanına kaydet
         await set(ref(db, 'siteContent'), INITIAL_CONTENT);
