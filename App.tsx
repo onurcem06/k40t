@@ -18,6 +18,17 @@ import { ApiService } from './services/api.ts';
 import { INITIAL_CONTENT, DEFAULT_USERS } from './data/defaultContent.ts';
 import { ViewState, UserRole, SiteContent, ClientProfile, UserAccount, ContactMessage } from './types.ts';
 
+// Wrapper Components defined outside App to prevent re-mounts
+const ServiceWrapper = ({ siteContent, onNavigate }: { siteContent: SiteContent, onNavigate: (v: ViewState) => void }) => {
+  const { id } = useParams();
+  return <ServicesView type="detail" view={id} siteContent={siteContent} onNavigate={onNavigate} />;
+};
+
+const BlogWrapper = ({ siteContent, onNavigate }: { siteContent: SiteContent, onNavigate: (v: ViewState) => void }) => {
+  const { id } = useParams();
+  return <BlogView posts={siteContent.blogPosts} content={siteContent} onNavigate={onNavigate} initialPostId={id} />;
+};
+
 const App: React.FC = () => {
 
   const [siteContent, setSiteContent] = useState<SiteContent>(INITIAL_CONTENT);
@@ -105,6 +116,7 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   // const [view, setView] = useState<ViewState>('MARKETING'); // Removed
 
+  // Navigation Logic
   const handleNavigate = (view: ViewState) => {
     const staticRoutes: { [key: string]: string } = {
       'MARKETING': '/',
@@ -141,17 +153,6 @@ const App: React.FC = () => {
     navigate('/');
   };
 
-  // Wrapper Components for Dynamic Routes
-  const ServiceRouteWrapper = () => {
-    const { id } = useParams();
-    return <ServicesView type="detail" view={id} siteContent={siteContent} onNavigate={handleNavigate} />;
-  };
-
-  const BlogRouteWrapper = () => {
-    const { id } = useParams();
-    return <BlogView posts={siteContent.blogPosts} content={siteContent} onNavigate={handleNavigate} initialPostId={id} />;
-  };
-
   return (
     <div className="min-h-screen text-slate-50 overflow-x-hidden relative bg-[#020617]">
       <div className="relative z-10 w-full min-h-screen bg-transparent">
@@ -159,9 +160,9 @@ const App: React.FC = () => {
           {/* Public Routes */}
           <Route path="/" element={<HomeView content={siteContent} onNavigate={handleNavigate} onAddMessage={handleAddMessage} />} />
           <Route path="/hizmetler" element={<ServicesView type="list" siteContent={siteContent} onNavigate={handleNavigate} />} />
-          <Route path="/hizmetler/:id" element={<ServiceRouteWrapper />} />
+          <Route path="/hizmetler/:id" element={<ServiceWrapper siteContent={siteContent} onNavigate={handleNavigate} />} />
           <Route path="/blog" element={<BlogView posts={siteContent.blogPosts} content={siteContent} onNavigate={handleNavigate} />} />
-          <Route path="/blog/:id" element={<BlogRouteWrapper />} />
+          <Route path="/blog/:id" element={<BlogWrapper siteContent={siteContent} onNavigate={handleNavigate} />} />
           <Route path="/referanslar" element={<ReferencesView content={siteContent} onNavigate={handleNavigate} />} />
           <Route path="/manifesto" element={<AboutView type="manifesto" content={siteContent} onNavigate={handleNavigate} />} />
           <Route path="/hakkimizda" element={<AboutView type="about" content={siteContent} onNavigate={handleNavigate} />} />
