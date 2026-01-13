@@ -29,7 +29,11 @@ const ReferencesView: React.FC<ReferencesViewProps> = ({ content, onNavigate }) 
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {(items || []).map((item) => (
-              <div key={item.id} className="group relative bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden hover:border-orange-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-orange-900/20">
+              <div
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                className="group relative bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden hover:border-orange-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-orange-900/20 cursor-pointer"
+              >
                 {/* Card Image Area */}
                 <div className="h-48 bg-black/40 relative overflow-hidden group-hover:h-40 transition-all duration-500">
                   {/* Background Image (First Work Image or Generic Pattern) */}
